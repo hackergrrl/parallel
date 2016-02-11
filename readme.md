@@ -17,21 +17,20 @@ Say you have a few long-ish running functions:
 
 ```go
 import (
-  "fmt"
-
-  parallel "github.com/noffle/parallel"
+ "fmt"
+ parallel "github.com/noffle/parallel"
 )
 
 func main() {
-	parallel.Parallel(nil, sleep, sleep)
+  parallel.Parallel(nil, sleep, sleep)
   fmt.Println("done")
 }
 
 func sleep() error {
-	fmt.Printf("sleeping..\n")
-	time.Sleep(100 * time.Millisecond)
-	fmt.Printf("..slept!\n")
-	return nil
+  fmt.Printf("sleeping..\n")
+  time.Sleep(100 * time.Millisecond)
+  fmt.Printf("..slept!\n")
+  return nil
 }
 ```
 
@@ -51,7 +50,7 @@ parallel operation early:
 func main() {
   var bail = make(chan struct{})
 
-	parallel.Parallel(bail,
+  parallel.Parallel(bail,
     sleep,
     func() error {
       fmt.Printf("going to bail..\n")
