@@ -6,7 +6,7 @@ import (
 
 var Canceled = errors.New("canceled")
 
-func Parallel(cancel <-chan struct{}, fns ...func() error) error {
+func Parallel(cancel chan struct{}, fns ...func() error) error {
 	errs := make(chan error)
 	for _, fn := range fns {
 		thisFn := fn
@@ -19,6 +19,7 @@ func Parallel(cancel <-chan struct{}, fns ...func() error) error {
 		select {
 		case e := <-errs:
 			if e != nil {
+				close(cancel)
 				return e
 			}
 		case <-cancel:

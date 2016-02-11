@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"testing"
 	"time"
-
-	context "golang.org/x/net/context"
 )
 
 var errExpected error = errors.New("no good, sorry")
@@ -20,12 +18,12 @@ func TestSimple(t *testing.T) {
 }
 
 func TestWithContextCancel(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	bail := make(chan struct{})
 
-	err := Parallel(ctx.Done(),
+	err := Parallel(bail,
 		func() error {
 			time.Sleep(100 * time.Millisecond)
-			cancel()
+			close(bail)
 			time.Sleep(100 * time.Millisecond)
 			return errors.New("shouldn't get here")
 		},
