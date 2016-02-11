@@ -11,26 +11,27 @@ all-or-nothing, and you'll want the whole thing to bail if any of them return an
 error.
 
 
-## Example
+## Examples
 
-Say you have a few long-ish running functions:
+Say you have a few long-ish running functions that return errors:
 
 ```go
 import (
- "fmt"
- parallel "github.com/noffle/parallel"
+  "errors"
+  "fmt"
+  parallel "github.com/noffle/parallel"
 )
 
 func main() {
-  parallel.Parallel(nil, sleep, sleep)
-  fmt.Println("done")
+  err := parallel.Parallel(nil, sleep, sleep)
+  fmt.Println(err)
 }
 
 func sleep() error {
   fmt.Printf("sleeping..\n")
   time.Sleep(100 * time.Millisecond)
   fmt.Printf("..slept!\n")
-  return nil
+  return errors.New("awoke")
 }
 ```
 
@@ -39,7 +40,7 @@ sleeping..
 sleeping..
 ..slept!
 ..slept!
-done!
+awoke
 ```
 
 You can also provide a `chan struct{}` as the first parameter to cancel the
@@ -68,6 +69,22 @@ outputs
 sleeping..
 going to bail..
 ..bailed!
+```
+
+`parallel` is also compatible with `golang.org/x/net/context`!
+
+```go
+func main() {
+  ctx, bail := context.WithCancel(context.Background())
+
+  parallel.Parallel(ctx.Done(),
+    sleep,
+    func() error {
+      time.Sleep(50 * time.Millisecond)
+      bail()
+    },
+  )
+}
 ```
 
 ## API
