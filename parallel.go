@@ -1,12 +1,12 @@
 package parallel
 
 import (
-	"errors"
+	"golang.org/x/net/context"
 )
 
-var Canceled = errors.New("canceled")
+var Canceled = context.Canceled
 
-func Parallel(cancel chan struct{}, fns ...func() error) error {
+func Parallel(done <-chan struct{}, cancel context.CancelFunc, fns ...func() error) error {
 	errs := make(chan error)
 	for _, fn := range fns {
 		thisFn := fn
@@ -19,10 +19,12 @@ func Parallel(cancel chan struct{}, fns ...func() error) error {
 		select {
 		case e := <-errs:
 			if e != nil {
-				close(cancel)
+				if cancel != nil {
+					cancel()
+				}
 				return e
 			}
-		case <-cancel:
+		case <-done:
 			return Canceled
 		}
 	}

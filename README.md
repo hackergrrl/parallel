@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-  err := parallel.Parallel(nil, sleep, sleep)
+  err := parallel.Parallel(nil, nil, sleep, sleep)
   fmt.Println(err)
 }
 
@@ -43,15 +43,16 @@ sleeping..
 awoke
 ```
 
-You can also provide a `chan struct{}` as the first parameter to cancel the
-parallel operation early:
+You can also provide a `done` channel and a cancel function as the first two
+parameters to cancel the parallel operation early:
 
 ```go
 
 func main() {
-  var bail = make(chan struct{})
+  done := make(chan struct{})
+  cancelFunc := func() { close(done) }
 
-  parallel.Parallel(bail,
+  parallel.Parallel(done, cancelFunc,
     sleep,
     func() error {
       fmt.Printf("going to bail..\n")
@@ -71,17 +72,17 @@ going to bail..
 ..bailed!
 ```
 
-`parallel` is also compatible with `golang.org/x/net/context`!
+This is designed to be used with with `golang.org/x/net/context`!
 
 ```go
 func main() {
-  ctx, bail := context.WithCancel(context.Background())
+  ctx, cancel := context.WithCancel(context.Background())
 
-  parallel.Parallel(ctx.Done(),
+  parallel.Parallel(ctx.Done(), cancel,
     sleep,
     func() error {
       time.Sleep(50 * time.Millisecond)
-      bail()
+      cancel()
     },
   )
 }
@@ -93,15 +94,16 @@ func main() {
 import "github.com/noffle/parallel"
 ```
 
-### func Parallel(chan struct{}, ...func() error) error
+### func Parallel(done <-chan struct{}, cancel context.CancelFunc, ...func() error) error
 
-Accepts an optional channel to signal cancellation of the parallel tasks, and a
-variable number of functions matching the signature `func() error`.
+Accepts an optional channel and cancel function to signal cancellation of the
+parallel tasks, and a variable number of functions matching the signature
+`func() error`.
 
-The first function to return a non-nil error closes the cancel channel (if
-non-nil) and propogates its error as the return value.
+The first function to return a non-nil error calls cancel() (if non-nil) and
+propogates its error as the return value.
 
-In the case that the cancel channel is closed, `Parallel` will return
+In the case that the done channel is closed, `Parallel` will return 
 `parallel.Canceled`.
 
 ## Install
